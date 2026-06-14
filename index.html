@@ -129,12 +129,12 @@ const bonuses = {
 };
 
 // PASTE YOUR PUBLIC GOOGLE SHEET SHARE URL INSIDE THE QUOTES BELOW:
-const googleSheetUrl = "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0jRPG7yW27PEDZ7Bt6CRaA/edit?usp=drivesdk";
+const sheetUrl = "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0jRPG7yW27PEDZ7Bt6CRaA/edit?usp=drivesdk";
 
 async function loadSheetsData() {
     try {
         const matches = [];
-        if(googleSheetUrl === "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0jRPG7yW27PEDZ7Bt6CRaA/edit?usp=drivesdk") {
+        if(sheetUrl === "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0jRPG7yW27PEDZ7Bt6CRaA/edit?usp=drivesdk") {
             document.getElementById('leaderboard-rows').innerHTML = `<tr><td colspan="6" style="color:orange; text-align:center;">Setup Needed: Paste your Google Sheet URL inside the code!</td></tr>`;
             return;
         }
