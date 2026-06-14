@@ -30,7 +30,8 @@
         .team-top12 { background: #e0f2fe; color: #0369a1; font-weight: 500; }
         .team-4th { background: #f0fdf4; color: #15803d; font-style: italic; }
         .search-box { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
-        .match-input-log { background: #f8fafc; border-left: 4px solid #1e3c72; padding: 12px; font-family: monospace; font-size: 13px; white-space: pre-wrap; overflow-x: auto; border-radius: 0 8px 8px 0; }
+        .match-input-log { background: #f8fafc; border-left: 4px solid #1e3c72; padding: 12px; font-family: monospace; font-size: 13px; white-space: pre-wrap; overflow-x: auto; border-radius: 0 8px 8px 0; max-height: 250px; }
+        .loading-text { font-style: italic; color: #64748b; }
     </style>
 </head>
 <body>
@@ -38,7 +39,7 @@
 <div class="container">
     <header>
         <h1>🏆 World Cup Syndicate Dashboard</h1>
-        <p>Fully Automated Point Calculation Engine</p>
+        <p>Live Automatic Score Tracker & Standings Generator</p>
     </header>
 
     <div class="rules-bar">
@@ -51,7 +52,6 @@
 
     <div class="main-layout">
         <div class="left-col">
-            <!-- DYNAMIC LEADERBOARD -->
             <div class="card">
                 <h2>Current Standings</h2>
                 <table>
@@ -66,23 +66,21 @@
                         </tr>
                     </thead>
                     <tbody id="leaderboard-rows">
-                        <!-- Calculated dynamically by JavaScript -->
+                        <tr><td colspan="6" class="loading-text">Fetching tournament data feed...</td></tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- ADMIN MATCH LOG PANEL -->
             <div class="card">
-                <h2>Tournament Match Results Ledger</h2>
+                <h2>Automated Match Results Feed</h2>
                 <p style="font-size: 13px; margin-top: -10px; color: #666;">
-                    To update your website, click edit on GitHub and simply modify or add lines to the list inside the script tag at the bottom of the file using the format: <code>"Team A X-X Team B"</code>.
+                    The dashboard pulls matches directly from the public feed. Live or concluded matches appear here automatically.
                 </p>
-                <div class="match-input-log" id="visible-match-log"></div>
+                <div class="match-input-log" id="visible-match-log">Awaiting server sync...</div>
             </div>
         </div>
 
         <div class="right-col">
-            <!-- SEARCHABLE TEAM DIRECTORY -->
             <div class="card">
                 <h2>Team Directory</h2>
                 <input type="text" id="teamSearch" class="search-box" placeholder="Search country or owner..." onkeyup="filterDirectory()">
@@ -95,8 +93,7 @@
                         </tr>
                     </thead>
                     <tbody id="directory-rows">
-                        <!-- Filled automatically -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -105,10 +102,10 @@
 
 <script>
 // ==========================================
-// 1. DATA ALLOCATIONS FROM DRAFT SCHEMATICS
+// 1. PARTICIPANTS DRAFT ROSTER MAPS
 // ==========================================
 const participants = [
-    { name: "Ina", teams: ["France", "Mexico", "Canada", "Haiti"] },
+    { name: "Ina", teams: ["Mexico", "Canada", "France", "Haiti"] },
     { name: "Donnacha", teams: ["Spain", "USA", "Australia"] },
     { name: "Matt", teams: ["Argentina", "Iran", "Japan", "Curaçao"] },
     { name: "Oisin", teams: ["England", "South Korea", "Saudi Arabia"] },
@@ -131,80 +128,93 @@ const top12Teams = ["France", "Spain", "Argentina", "England", "Portugal", "Braz
 const fourthTeams = ["Haiti", "Curaçao", "Jordan", "Cabo Verde", "Congo DR", "Saudi Arabia"];
 
 // ==========================================
-// 2. THE EDITABLE MATCH LOG
-// Just add or change games here. Format MUST be: "Team A Score-Score Team B"
-// ==========================================
-const matchLog = [
-    "Mexico 2-0 South Africa",
-    "South Korea 2-1 Czechia",
-    "Canada 1-1 Bosnia and Herzegovina",
-    "USA 4-1 Paraguay",
-    "Qatar 1-1 Switzerland",
-    "Brazil 1-1 Morocco",
-    "Haiti 0-1 Scotland",
-    "Australia 2-0 Türkiye",
-];
-
-// ==========================================
-// 3. SPECIAL BONUS POINTS (Knockout stages)
-// Add teams to these lists when they qualify!
+// 2. SPECIAL KNOCKOUT EXTRA BONUS WEIGHTS
+// Update these on GitHub when stages conclude!
 // ==========================================
 const bonuses = {
-    knockoutQual: [], // e.g., ["France", "Mexico"] (+5 points each)
-    semiFinalists: [], // e.g., ["Spain"] (+10 points each)
+    knockoutQual: [],  // e.g., ["Mexico", "France"] (+5 points)
+    semiFinalists: [], // e.g., ["Spain"] (+10 points)
     champion: ""       // e.g., "Argentina" (+20 points)
 };
 
 // ==========================================
-// 4. MAIN ENGINE (Do not touch below this line)
+// 3. CORE PROCESSING FRAMEWORK (AUTOMATED)
 // ==========================================
-function calculateTournament() {
+async function fetchLiveScores() {
+    try {
+        const response = await fetch('https://worldcup26.ir/get/games');
+        if (!response.ok) throw new Error("API server context failure");
+        const gamesList = await response.json();
+        
+        let processedMatches = [];
+        
+        // Loop through matches and reformat played ones
+        gamesList.forEach(game => {
+            if (game.status === 'finished' || game.status === 'live') {
+                const homeName = game.homeTeam.en;
+                const awayName = game.awayTeam.en;
+                const homeScore = game.homeScore;
+                const awayScore = game.awayScore;
+                
+                processedMatches.push({
+                    home: homeName,
+                    away: awayName,
+                    hScore: parseInt(homeScore),
+                    aScore: parseInt(awayScore),
+                    rawStr: `${homeName} ${homeScore}-${awayScore} ${awayName} (${game.status.toUpperCase()})`
+                });
+            }
+        });
+        
+        renderCalculations(processedMatches);
+        
+    } catch (error) {
+        console.error("Live Feed Error: ", error);
+        document.getElementById('leaderboard-rows').innerHTML = 
+            `<tr><td colspan="6" style="color:red; text-align:center;">Network Error sync tracking feed. Data fallback offline.</td></tr>`;
+    }
+}
+
+function renderCalculations(matches) {
     let teamStats = {};
+    let displayLines = [];
     
-    // Initialize stats for every team present in syndicate
+    // Set baseline data objects
     participants.forEach(p => {
         p.teams.forEach(t => {
-            if (!teamStats[t]) {
-                teamStats[t] = { wins: 0, draws: 0, losses: 0, points: 0 };
-            }
+            if (!teamStats[t]) teamStats[t] = { wins: 0, draws: 0, losses: 0, points: 0 };
         });
     });
 
-    // Parse Match Data
-    matchLog.forEach(matchStr => {
-        const parts = matchStr.split(/\s+(\d+)-(\d+)\s+/);
-        if (parts.length < 3) return;
+    // Compute outcomes from live list
+    matches.forEach(m => {
+        if (!teamStats[m.home]) teamStats[m.home] = { wins: 0, draws: 0, losses: 0, points: 0 };
+        if (!teamStats[m.away]) teamStats[m.away] = { wins: 0, draws: 0, losses: 0, points: 0 };
         
-        const teamA = parts[0].trim();
-        const scoreA = parseInt(parts[1]);
-        const scoreB = parseInt(parts[2]);
-        const teamB = parts[3].trim();
+        displayLines.push(m.rawStr);
 
-        if (!teamStats[teamA]) teamStats[teamA] = { wins: 0, draws: 0, losses: 0, points: 0 };
-        if (!teamStats[teamB]) teamStats[teamB] = { wins: 0, draws: 0, losses: 0, points: 0 };
-
-        if (scoreA > scoreB) {
-            teamStats[teamA].wins++;
-            teamStats[teamB].losses++;
-        } else if (scoreB > scoreA) {
-            teamStats[teamB].wins++;
-            teamStats[teamA].losses++;
+        if (m.hScore > m.aScore) {
+            teamStats[m.home].wins++;
+            teamStats[m.away].losses++;
+        } else if (m.aScore > m.hScore) {
+            teamStats[m.away].wins++;
+            teamStats[m.home].losses++;
         } else {
-            teamStats[teamA].draws++;
-            teamStats[teamB].draws++;
+            teamStats[m.home].draws++;
+            teamStats[m.away].draws++;
         }
     });
 
-    // Compute point weights per team
+    // Map weights onto individuals
     for (let team in teamStats) {
-        let score = (teamStats[team].wins * 3) + (teamStats[team].draws * 1);
-        if (bonuses.knockoutQual.includes(team)) score += 5;
-        if (bonuses.semiFinalists.includes(team)) score += 10;
-        if (bonuses.champion === team) score += 20;
-        teamStats[team].points = score;
+        let tally = (teamStats[team].wins * 3) + (teamStats[team].draws * 1);
+        if (bonuses.knockoutQual.includes(team)) tally += 5;
+        if (bonuses.semiFinalists.includes(team)) tally += 10;
+        if (bonuses.champion === team) tally += 20;
+        teamStats[team].points = tally;
     }
 
-    // Process Standings
+    // Assemble dynamic array for standings re-ranking
     let standings = participants.map(p => {
         let totalW = 0, totalD = 0, totalL = 0, matchPoints = 0, bonusPoints = 0;
         
@@ -229,10 +239,10 @@ function calculateTournament() {
         };
     });
 
-    // Sort Standings descending
+    // Re-rank math sort
     standings.sort((a, b) => b.total - a.total);
 
-    // Render Standings
+    // Build the visual table rows
     const tbody = document.getElementById('leaderboard-rows');
     tbody.innerHTML = "";
     
@@ -266,7 +276,7 @@ function calculateTournament() {
         `;
     });
 
-    // Render Directory Sidebar
+    // Render Side Directory
     let uniqueTeams = {};
     participants.forEach(p => {
         p.teams.forEach(t => {
@@ -288,8 +298,9 @@ function calculateTournament() {
         `;
     });
 
-    // Display match log in log window
-    document.getElementById('visible-match-log').textContent = matchLog.length > 0 ? matchLog.join("\n") : "No matches parsed yet.";
+    // Update match box
+    document.getElementById('visible-match-log').textContent = 
+        displayLines.length > 0 ? displayLines.join("\n") : "No live or finished tournament matches found yet.";
 }
 
 function filterDirectory() {
@@ -300,8 +311,8 @@ function filterDirectory() {
     }
 }
 
-// Fire Calculation Engine on load
-window.onload = calculateTournament;
+// Initial fire on window load context
+window.onload = fetchLiveScores;
 </script>
 </body>
 </html>
