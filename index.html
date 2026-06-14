@@ -134,15 +134,18 @@ const sheetUrl = "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0
 async function loadSheetsData() {
     try {
         const matches = [];
-        if(sheetUrl === "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0jRPG7yW27PEDZ7Bt6CRaA/edit?usp=drivesdk") {
+        
+        // Safety check to ensure a link was actually provided
+        if(sheetUrl === "" || sheetUrl.includes("YOUR_GOOGLE_SHEET_URL_HERE")) {
             document.getElementById('leaderboard-rows').innerHTML = `<tr><td colspan="6" style="color:orange; text-align:center;">Setup Needed: Paste your Google Sheet URL inside the code!</td></tr>`;
             return;
         }
         
-        // Extract spreadsheet ID to query Google's visualization API directly (bypasses CORS blocks completely)
-        const matchesId = googleSheetUrl.match(/[-\w]{25,}/);
+        // FIXED: Now correctly references 'sheetUrl' instead of the broken variable name
+        const matchesId = sheetUrl.match(/[-\w]{25,}/);
         if(!matchesId) throw new Error("Invalid URL");
         
+        // FIXED: Correctly pulls from your active spreadsheet ID variable
         const csvUrl = `https://docs.google.com/spreadsheets/d/${matchesId[0]}/gviz/tq?tqx=out:csv`;
         const res = await fetch(csvUrl);
         const dataText = await res.text();
