@@ -142,13 +142,15 @@ const bonuses = {
 // ==========================================
 async function fetchLiveScores() {
     try {
-        ```javascript
-   const response = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://worldcup26.ir/get/games'));
-        ``javascript
-   const resData = await response.json();
-   const gamesList = JSON.parse(resData.contents);
-        const gamesList = await response.json();
+        // Connect via a lightning-fast dedicated CORS proxy
+        const response = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://worldcup26.ir/get/games'));
+        if (!response.ok) throw new Error("API server context failure");
         
+        // Read the clean data stream directly
+        const gamesList = await response.json();
+
+        
+
         let processedMatches = [];
         
         // Loop through matches and reformat played ones
