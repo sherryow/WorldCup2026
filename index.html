@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,6 +46,7 @@
     <div class="rules-bar">
         <div>Win: <span>3 pts</span></div>
         <div>Draw: <span>1 pt</span></div>
+        <div>Win by 3+ Goals: <span>+2 pts</span></div>
         <div>Knockout Qual: <span>+5 pts</span></div>
         <div>Semi-Final: <span>+10 pts</span></div>
         <div>Champion: <span>+20 pts</span></div>
@@ -141,11 +143,9 @@ async function loadSheetsData() {
             return;
         }
         
-        // FIXED: Now correctly references 'sheetUrl' instead of the broken variable name
         const matchesId = sheetUrl.match(/[-\w]{25,}/);
         if(!matchesId) throw new Error("Invalid URL");
         
-        // FIXED: Correctly pulls from your active spreadsheet ID variable
         const csvUrl = `https://docs.google.com/spreadsheets/d/${matchesId[0]}/gviz/tq?tqx=out:csv`;
         const res = await fetch(csvUrl);
         const dataText = await res.text();
@@ -188,39 +188,38 @@ function renderCalculations(matches) {
     
     participants.forEach(p => {
         p.teams.forEach(t => {
-            if (!teamStats[t]) teamStats[t] = { wins: 0, draws: 0, losses: 0, points: 0 };
+            if (!teamStats[t]) teamStats[t] = { wins: 0, draws: 0, losses: 0, goalBonuses: 0, points: 0 };
         });
     });
 
     matches.forEach(m => {
-        if (!teamStats[m.home]) teamStats[m.home] = { wins: 0, draws: 0, losses: 0, points: 0 };
-        if (!teamStats[m.away]) teamStats[m.away] = { wins: 0, draws: 0, losses: 0, points: 0 };
+        if (!teamStats[m.home]) teamStats[m.home] = { wins: 0, draws: 0, losses: 0, goalBonuses: 0, points: 0 };
+        if (!teamStats[m.away]) teamStats[m.away] = { wins: 0, draws: 0, losses: 0, goalBonuses: 0, points: 0 };
         
         displayLines.push(m.rawStr);
 
-                if (m.hScore > m.aScore) {
+        if (m.hScore > m.aScore) {
             teamStats[m.home].wins++;
             teamStats[m.away].losses++;
-            // New Rule: Home team wins by 3 or more goals
+            // Calculate if home team won by 3 or more goals
             if ((m.hScore - m.aScore) >= 3) {
-                teamStats[m.home].points += 2;
+                teamStats[m.home].goalBonuses += 2;
             }
         } else if (m.aScore > m.hScore) {
             teamStats[m.away].wins++;
             teamStats[m.home].losses++;
-            // New Rule: Away team wins by 3 or more goals
+            // Calculate if away team won by 3 or more goals
             if ((m.aScore - m.hScore) >= 3) {
-                teamStats[m.away].points += 2;
+                teamStats[m.away].goalBonuses += 2;
             }
         } else {
-
             teamStats[m.home].draws++;
             teamStats[m.away].draws++;
         }
     });
 
     for (let team in teamStats) {
-        let tally = (teamStats[team].wins * 3) + (teamStats[team].draws * 1);
+        let tally = (teamStats[team].wins * 3) + (teamStats[team].draws * 1) + teamStats[team].goalBonuses;
         if (bonuses.knockoutQual.includes(team)) tally += 5;
         if (bonuses.semiFinalists.includes(team)) tally += 10;
         if (bonuses.champion === team) tally += 20;
@@ -234,7 +233,8 @@ function renderCalculations(matches) {
                 totalW += teamStats[t].wins;
                 totalD += teamStats[t].draws;
                 totalL += teamStats[t].losses;
-                matchPoints += (teamStats[t].wins * 3) + (teamStats[t].draws * 1);
+                // Includes standard points + blowout goal bonuses
+                matchPoints += (teamStats[t].wins * 3) + (teamStats[t].draws * 1) + teamStats[t].goalBonuses;
             }
             if (bonuses.knockoutQual.includes(t)) bonusPoints += 5;
             if (bonuses.semiFinalists.includes(t)) bonusPoints += 10;
