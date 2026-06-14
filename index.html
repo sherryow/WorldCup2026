@@ -198,13 +198,22 @@ function renderCalculations(matches) {
         
         displayLines.push(m.rawStr);
 
-        if (m.hScore > m.aScore) {
+                if (m.hScore > m.aScore) {
             teamStats[m.home].wins++;
             teamStats[m.away].losses++;
+            // New Rule: Home team wins by 3 or more goals
+            if ((m.hScore - m.aScore) >= 3) {
+                teamStats[m.home].points += 2;
+            }
         } else if (m.aScore > m.hScore) {
             teamStats[m.away].wins++;
             teamStats[m.home].losses++;
+            // New Rule: Away team wins by 3 or more goals
+            if ((m.aScore - m.hScore) >= 3) {
+                teamStats[m.away].points += 2;
+            }
         } else {
+
             teamStats[m.home].draws++;
             teamStats[m.away].draws++;
         }
