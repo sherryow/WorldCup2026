@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,9 +26,14 @@
         .rank-3 { background: #ffedd5; color: #ea580c; }
         .rank-normal { background: #f1f5f9; color: #64748b; }
         .total-pts { font-weight: bold; color: #1e3c72; font-size: 15px; }
-        .team-tag { display: inline-block; background: #f1f5f9; color: #334155; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin: 2px; }
-        .team-top12 { background: #e0f2fe; color: #0369a1; font-weight: 500; }
-        .team-4th { background: #f0fdf4; color: #15803d; font-style: italic; }
+        
+        /* Team Tag Styling Base */
+        .team-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin: 2px; font-weight: 500; }
+        
+        /* NEW: Status highlights for Qualified vs Eliminated */
+        .team-qualified { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .team-eliminated { background: #fee2e2; color: #991b1b; text-decoration: line-through; opacity: 0.75; border: 1px solid #fecaca; }
+
         .search-box { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
         .match-input-log { background: #f8fafc; border-left: 4px solid #1e3c72; padding: 12px; font-family: monospace; font-size: 13px; white-space: pre-wrap; overflow-x: auto; border-radius: 0 8px 8px 0; max-height: 250px; }
         .loading-text { font-style: italic; color: #64748b; }
@@ -99,7 +103,6 @@
 </div>
 
 <script>
-// Official Draft Configurations Linked From App Images
 const participants = [
     { name: "Ina", teams: ["France", "Mexico", "Canada", "Haiti"] },
     { name: "Donnacha", teams: ["Spain", "USA", "Australia"] },
@@ -120,30 +123,26 @@ const participants = [
     { name: "Dee", teams: ["Portugal", "South Africa", "Panama", "Saudi Arabia"] }
 ];
 
-const top12Teams = ["France", "Spain", "Argentina", "England", "Portugal", "Brazil", "Netherlands", "Morocco", "Belgium", "Germany", "Croatia", "Colombia"];
-const fourthTeams = ["Haiti", "Curaçao", "Jordan", "Cabo Verde", "Congo DR", "Saudi Arabia"];
-
-// Change the bonus lists here on GitHub when teams progress!
+// Active Qualified Roster List (Used for point tallies AND color states)
 const bonuses = {
-    knockoutQual: ["Mexico", "South Africa", "Switzerland", "Canada", "Bosnia and Herzegovina",
+    knockoutQual: [
+        "Mexico", "South Africa", "Switzerland", "Canada", "Bosnia and Herzegovina",
         "Brazil", "Morocco", "USA", "Australia", "Paraguay",
         "Germany", "Côte d'Ivoire", "Ecuador", "Netherlands", "Japan",
         "Sweden", "Belgium", "Egypt", "Algeria", "Spain",
         "Cabo Verde", "France", "Norway", "Senegal", "Argentina",
         "Austria", "Colombia", "Portugal", "Congo DR", "England",
-        "Croatia", "Ghana"], 
+        "Croatia", "Ghana"
+    ],
     semiFinalists: [], 
     champion: ""       
 };
 
-// PASTE YOUR PUBLIC GOOGLE SHEET SHARE URL INSIDE THE QUOTES BELOW:
 const sheetUrl = "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0jRPG7yW27PEDZ7Bt6CRaA/edit?usp=drivesdk";
 
 async function loadSheetsData() {
     try {
         const matches = [];
-        
-        // Safety check to ensure a link was actually provided
         if(sheetUrl === "" || sheetUrl.includes("YOUR_GOOGLE_SHEET_URL_HERE")) {
             document.getElementById('leaderboard-rows').innerHTML = `<tr><td colspan="6" style="color:orange; text-align:center;">Setup Needed: Paste your Google Sheet URL inside the code!</td></tr>`;
             return;
@@ -156,12 +155,10 @@ async function loadSheetsData() {
         const res = await fetch(csvUrl);
         const dataText = await res.text();
         
-        // Custom parser to split lines cleanly
         const rows = dataText.split(/\r?\n/).map(row => {
             return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cell.replace(/^"|"$|\\/g, '').trim());
         });
 
-        // Skip the header row (i=0) and parse scores
         for(let i = 1; i < rows.length; i++) {
             if(rows[i].length >= 3 && rows[i][0] && rows[i][1]) {
                 const home = rows[i][0];
@@ -207,14 +204,12 @@ function renderCalculations(matches) {
         if (m.hScore > m.aScore) {
             teamStats[m.home].wins++;
             teamStats[m.away].losses++;
-            // Calculate if home team won by 3 or more goals
             if ((m.hScore - m.aScore) >= 3) {
                 teamStats[m.home].goalBonuses += 2;
             }
         } else if (m.aScore > m.hScore) {
             teamStats[m.away].wins++;
             teamStats[m.home].losses++;
-            // Calculate if away team won by 3 or more goals
             if ((m.aScore - m.hScore) >= 3) {
                 teamStats[m.away].goalBonuses += 2;
             }
@@ -239,7 +234,6 @@ function renderCalculations(matches) {
                 totalW += teamStats[t].wins;
                 totalD += teamStats[t].draws;
                 totalL += teamStats[t].losses;
-                // Includes standard points + blowout goal bonuses
                 matchPoints += (teamStats[t].wins * 3) + (teamStats[t].draws * 1) + teamStats[t].goalBonuses;
             }
             if (bonuses.knockoutQual.includes(t)) bonusPoints += 5;
@@ -257,9 +251,11 @@ function renderCalculations(matches) {
     standings.forEach((row, index) => {
         if (index > 0 && row.total < standings[index - 1].total) currentRank = index + 1;
         let badgeClass = currentRank === 1 ? "rank-1" : currentRank === 2 ? "rank-2" : currentRank === 3 ? "rank-3" : "rank-normal";
+        
+        // FIXED: Checks status against knockoutQual list to set Green vs Red Strike styles
         let tagsHtml = row.teams.map(t => {
-            let cls = top12Teams.includes(t) ? "team-top12" : fourthTeams.includes(t) ? "team-4th" : "";
-            return `<span class="team-tag ${cls}">${t}</span>`;
+            let statusClass = bonuses.knockoutQual.includes(t) ? "team-qualified" : "team-eliminated";
+            return `<span class="team-tag ${statusClass}">${t}</span>`;
         }).join("");
 
         tbody.innerHTML += `<tr>
