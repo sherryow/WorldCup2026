@@ -30,7 +30,7 @@
         /* Team Tag Styling Base */
         .team-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin: 2px; font-weight: 500; }
         
-        /* Status highlights for Qualified vs Eliminated vs Normal Group Stage */
+        /* Status highlights for Qualified vs Eliminated */
         .team-normal { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
         .team-qualified { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
         .team-eliminated { background: #fee2e2; color: #991b1b; text-decoration: line-through; opacity: 0.65; border: 1px solid #fecaca; }
@@ -257,10 +257,11 @@ function renderCalculations(matches) {
         if (index > 0 && row.total < standings[index - 1].total) currentRank = index + 1;
         let badgeClass = currentRank === 1 ? "rank-1" : currentRank === 2 ? "rank-2" : currentRank === 3 ? "rank-3" : "rank-normal";
         
-        // Checks status against eliminated list first, fallback to qualified status
+        // FIXED LOGIC: If they are on the explicit eliminated list OR if they never qualified for knockouts at all -> Red.
+        // Otherwise, if they are in the knockoutQual list -> Green.
         let tagsHtml = row.teams.map(t => {
             let statusClass = "team-normal"; 
-            if (bonuses.eliminatedTeams.includes(t)) {
+            if (bonuses.eliminatedTeams.includes(t) || !bonuses.knockoutQual.includes(t)) {
                 statusClass = "team-eliminated";
             } else if (bonuses.knockoutQual.includes(t)) {
                 statusClass = "team-qualified";
