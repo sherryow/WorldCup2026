@@ -38,6 +38,26 @@
         .search-box { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
         .match-input-log { background: #f8fafc; border-left: 4px solid #1e3c72; padding: 12px; font-family: monospace; font-size: 13px; white-space: pre-wrap; overflow-x: auto; border-radius: 0 8px 8px 0; max-height: 250px; }
         .loading-text { font-style: italic; color: #64748b; }
+
+        /* Interactive Clickable Directory Rows */
+        .clickable-row { cursor: pointer; transition: background 0.15s ease; }
+        .clickable-row:hover { background-color: #f1f5f9; }
+
+        /* Pop-up Modal Box Styling */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px); z-index: 1000; justify-content: center; align-items: center; padding: 15px; }
+        .modal-card { background: white; width: 100%; max-width: 550px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); animation: modalSlide 0.2s ease-out; overflow: hidden; }
+        .modal-header { background: #1e3c72; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { margin: 0; font-size: 18px; }
+        .modal-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; opacity: 0.8; }
+        .modal-close:hover { opacity: 1; }
+        .modal-body { padding: 20px; max-height: 75vh; overflow-y: auto; }
+        .modal-section { margin-bottom: 15px; }
+        .modal-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px; }
+        .breakdown-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #f1f5f9; font-size: 13px; }
+        .breakdown-row:last-child { border-bottom: none; }
+        .bonus-badge { background: #fee2e2; color: #991b1b; font-size: 11px; padding: 1px 5px; border-radius: 3px; font-weight: bold; margin-left: 6px; }
+        .bonus-badge.green { background: #dcfce7; color: #166534; }
+        @keyframes modalSlide { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -86,7 +106,7 @@
 
         <div class="right-col">
             <div class="card">
-                <h2>Team Directory</h2>
+                <h2>Team Directory <span style="font-size:11px; color:#64748b; font-weight:normal; float:right; margin-top:5px;">(Click team for breakdown)</span></h2>
                 <input type="text" id="teamSearch" class="search-box" placeholder="Search country or owner..." onkeyup="filterDirectory()">
                 <table id="directory-table">
                     <thead>
@@ -100,6 +120,17 @@
                 </table>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Dynamic Overlay Modal Frame -->
+<div id="breakdownModal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 id="modalTeamName">Team Breakdown</h3>
+            <button class="modal-close" onclick="closeModal(true)">&times;</button>
+        </div>
+        <div class="modal-body" id="modalContent"></div>
     </div>
 </div>
 
@@ -124,7 +155,6 @@ const participants = [
     { name: "Dee", teams: ["Portugal", "South Africa", "Panama", "Saudi Arabia"] }
 ];
 
-// Tournament Progress Management Lists
 const bonuses = {
     knockoutQual: [
         "Mexico", "South Africa", "Switzerland", "Canada", "Bosnia and Herzegovina",
@@ -135,7 +165,6 @@ const bonuses = {
         "Austria", "Colombia", "Portugal", "Congo DR", "England",
         "Croatia", "Ghana"
     ],
-    // ADD TEAMS HERE WHEN ELIMINATED FROM THE KNOCKOUTS:
     eliminatedTeams: [
         "South Africa"
     ],
@@ -144,6 +173,8 @@ const bonuses = {
 };
 
 const sheetUrl = "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0jRPG7yW27PEDZ7Bt6CRaA/edit?usp=drivesdk";
+let globalMatchesCache = []; 
+let globalTeamStatsCache = {};
 
 async function loadSheetsData() {
     try {
@@ -152,7 +183,6 @@ async function loadSheetsData() {
             document.getElementById('leaderboard-rows').innerHTML = `<tr><td colspan="6" style="color:orange; text-align:center;">Setup Needed: Paste your Google Sheet URL inside the code!</td></tr>`;
             return;
         }
-        
         const matchesId = sheetUrl.match(/[-\w]{25,}/);
         if(!matchesId) throw new Error("Invalid URL");
         
@@ -182,7 +212,7 @@ async function loadSheetsData() {
                 }
             }
         }
-        
+        globalMatchesCache = matches;
         renderCalculations(matches);
     } catch(e) {
         console.error(e);
@@ -196,32 +226,46 @@ function renderCalculations(matches) {
     
     participants.forEach(p => {
         p.teams.forEach(t => {
-            if (!teamStats[t]) teamStats[t] = { wins: 0, draws: 0, losses: 0, goalBonuses: 0, points: 0 };
+            if (!teamStats[t]) teamStats[t] = { wins: 0, draws: 0, losses: 0, goalBonuses: 0, points: 0, history: [] };
         });
     });
 
     matches.forEach(m => {
-        if (!teamStats[m.home]) teamStats[m.home] = { wins: 0, draws: 0, losses: 0, goalBonuses: 0, points: 0 };
-        if (!teamStats[m.away]) teamStats[m.away] = { wins: 0, draws: 0, losses: 0, goalBonuses: 0, points: 0 };
+        if (!teamStats[m.home]) teamStats[m.home] = { wins: 0, draws: 0, losses: 0, goalBonuses: 0, points: 0, history: [] };
+        if (!teamStats[m.away]) teamStats[m.away] = { wins: 0, draws: 0, losses: 0, goalBonuses: 0, points: 0, history: [] };
         
         displayLines.push(m.rawStr);
+
+        let homePtsEarned = 0;
+        let awayPtsEarned = 0;
+        let homeBlowout = 0;
+        let awayBlowout = 0;
 
         if (m.hScore > m.aScore) {
             teamStats[m.home].wins++;
             teamStats[m.away].losses++;
+            homePtsEarned = 3;
             if ((m.hScore - m.aScore) >= 3) {
                 teamStats[m.home].goalBonuses += 2;
+                homeBlowout = 2;
             }
         } else if (m.aScore > m.hScore) {
             teamStats[m.away].wins++;
             teamStats[m.home].losses++;
+            awayPtsEarned = 3;
             if ((m.aScore - m.hScore) >= 3) {
                 teamStats[m.away].goalBonuses += 2;
+                awayBlowout = 2;
             }
         } else {
             teamStats[m.home].draws++;
             teamStats[m.away].draws++;
+            homePtsEarned = 1;
+            awayPtsEarned = 1;
         }
+
+        teamStats[m.home].history.push({ opponent: m.away, scoreString: `${m.hScore}-${m.aScore}`, basePts: homePtsEarned, blowoutPts: homeBlowout });
+        teamStats[m.away].history.push({ opponent: m.home, scoreString: `${m.aScore}-${m.hScore}`, basePts: awayPtsEarned, blowoutPts: awayBlowout });
     });
 
     for (let team in teamStats) {
@@ -231,6 +275,8 @@ function renderCalculations(matches) {
         if (bonuses.champion === team) tally += 20;
         teamStats[team].points = tally;
     }
+
+    globalTeamStatsCache = teamStats;
 
     let standings = participants.map(p => {
         let totalW = 0, totalD = 0, totalL = 0, matchPoints = 0, bonusPoints = 0;
@@ -257,8 +303,6 @@ function renderCalculations(matches) {
         if (index > 0 && row.total < standings[index - 1].total) currentRank = index + 1;
         let badgeClass = currentRank === 1 ? "rank-1" : currentRank === 2 ? "rank-2" : currentRank === 3 ? "rank-3" : "rank-normal";
         
-        // FIXED LOGIC: If they are on the explicit eliminated list OR if they never qualified for knockouts at all -> Red.
-        // Otherwise, if they are in the knockoutQual list -> Green.
         let tagsHtml = row.teams.map(t => {
             let statusClass = "team-normal"; 
             if (bonuses.eliminatedTeams.includes(t) || !bonuses.knockoutQual.includes(t)) {
@@ -291,7 +335,7 @@ function renderCalculations(matches) {
     dirBody.innerHTML = "";
     Object.keys(uniqueTeams).sort().forEach(t => {
         let pts = teamStats[t] ? teamStats[t].points : 0;
-        dirBody.innerHTML += `<tr>
+        dirBody.innerHTML += `<tr class="clickable-row" onclick="showTeamBreakdown('${t.replace(/'/g, "\\'")}')">
             <td><strong>${t}</strong></td>
             <td><span style="font-size:12px; color:#555;">${uniqueTeams[t].join(", ")}</span></td>
             <td style="text-align: right; font-weight: bold; color: #15803d;">+${pts}</td>
@@ -299,6 +343,69 @@ function renderCalculations(matches) {
     });
 
     document.getElementById('visible-match-log').textContent = displayLines.length > 0 ? displayLines.join("\n") : "No matches recorded in spreadsheet yet.";
+}
+
+function showTeamBreakdown(teamName) {
+    const stats = globalTeamStatsCache[teamName];
+    document.getElementById('modalTeamName').innerText = `${teamName} - Points Breakdown`;
+    
+    let html = "";
+    
+    // 1. MATCH HISTORY SECTION
+    html += `<div class="modal-section"><div class="modal-section-title">Match Results Log</div>`;
+    if(!stats || !stats.history || stats.history.length === 0) {
+        html += `<div style="font-style:italic; color:#64748b; font-size:13px;">No matches found in sheet log for this country yet.</div>`;
+    } else {
+        stats.history.forEach(m => {
+            let ptsDetail = `+${m.basePts} Pts`;
+            if (m.blowoutPts > 0) {
+                ptsDetail += ` <span class="bonus-badge">+2 Blowout Win</span>`;
+            }
+            html += `<div class="breakdown-row">
+                <span>vs <strong>${m.opponent}</strong> (${m.scoreString})</span>
+                <span>${ptsDetail}</span>
+            </div>`;
+        });
+    }
+    html += `</div>`;
+
+    // 2. TOURNAMENT BONUSES SECTION
+    html += `<div class="modal-section"><div class="modal-section-title">Tournament Progress Bonuses</div>`;
+    let setupBonus = false;
+    if(bonuses.knockoutQual.includes(teamName)) {
+        html += `<div class="breakdown-row"><span>Reached Knockout Stage</span><span style="font-weight:600; color:#166534;">+5 Pts</span></div>`;
+        setupBonus = true;
+    }
+    if(bonuses.semiFinalists.includes(teamName)) {
+        html += `<div class="breakdown-row"><span>Reached Semi-Finals</span><span style="font-weight:600; color:#166534;">+10 Pts</span></div>`;
+        setupBonus = true;
+    }
+    if(bonuses.champion === teamName) {
+        html += `<div class="breakdown-row"><span>World Cup Champion</span><span style="font-weight:600; color:#166534;">+20 Pts</span></div>`;
+        setupBonus = true;
+    }
+    if(!setupBonus) {
+        html += `<div style="font-style:italic; color:#64748b; font-size:13px;">No dynamic stage bonus points earned yet.</div>`;
+    }
+    html += `</div>`;
+
+    // 3. AGGREGATED SUMMARY
+    let totalComputed = stats ? stats.points : 0;
+    html += `<div class="modal-section" style="margin-top:20px; padding-top:10px; border-top:2px solid #edf2f7;">
+        <div class="breakdown-row" style="font-size:16px; font-weight:bold;">
+            <span>TOTAL POINTS GENERATED</span>
+            <span style="color:#1e3c72;">${totalComputed} Pts</span>
+        </div>
+    </div>`;
+
+    document.getElementById('modalContent').innerHTML = html;
+    document.getElementById('breakdownModal').style.display = 'flex';
+}
+
+function closeModal(force) {
+    if(force === true || event.target.id === 'breakdownModal') {
+        document.getElementById('breakdownModal').style.display = 'none';
+    }
 }
 
 function filterDirectory() {
