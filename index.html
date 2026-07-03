@@ -174,13 +174,12 @@ const bonuses = {
     ],
     eliminatedTeams: [
         "South Africa", "Japan", "Germany", "Netherlands", "Côte d'Ivoire", "Sweden", "Ecuador", "Congo DR", "Senegal", "Bosnia and Herzegovina",
-        "Austria", "Algeria",
+        "Austria", "Algeria"
     ],
     semiFinalists: [], 
     champion: ""       
 };
 
-// Paste your direct shared Google Spreadsheet browser URL address string target here:
 const sheetUrl = "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0jRPG7yW27PEDZ7Bt6CRaA/edit?usp=drivesdk";
 let globalMatchesCache = []; 
 let globalTeamStatsCache = {};
@@ -321,7 +320,6 @@ function renderCalculations(matches) {
     tbody.innerHTML = "";
     let currentRank = 1;
     
-    // RENDER AND BIND EVENTS IN A SINGLE SAFE ITERATION LOOP
     standings.forEach((row, index) => {
         if (index > 0 && row.total < standings[index - 1].total) currentRank = index + 1;
         let badgeClass = currentRank === 1 ? "rank-1" : currentRank === 2 ? "rank-2" : currentRank === 3 ? "rank-3" : "rank-normal";
@@ -336,7 +334,6 @@ function renderCalculations(matches) {
             return `<span class="team-tag ${statusClass}">${t}</span>`;
         }).join("");
 
-        // Escape participant single quotes cleanly safely
         let safeName = row.name.replace(/'/g, "\\'");
 
         tbody.innerHTML += `<tr class="clickable-row" onclick="showPlayerBreakdown('${safeName}')">
