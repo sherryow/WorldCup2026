@@ -77,7 +77,8 @@
         <div>Draw: <span>1 pt</span></div>
         <div>Win by 3+ Goals: <span>+2 pts</span></div>
         <div>Knockout Qual: <span>+5 pts</span></div>
-        <div>Semi-Final: <span>+10 pts</span></div>
+        <div>Quarter-Final: <span>+10 pts</span></div>
+        <div>Semi-Final: <span>+15 pts</span></div>
         <div>Champion: <span>+20 pts</span></div>
     </div>
 
@@ -171,6 +172,9 @@ const bonuses = {
         "Cabo Verde", "France", "Norway", "Senegal", "Argentina",
         "Austria", "Colombia", "Portugal", "Congo DR", "England",
         "Croatia", "Ghana"
+    ],
+    quarterFinalists: [
+        "France", "Morocco", "Spain", "Belgium", "Norway", "England", "Argentina"
     ],
     eliminatedTeams: [
         "South Africa", "Japan", "Germany", "Netherlands", "Côte d'Ivoire", "Sweden", "Ecuador", "Congo DR", "Senegal", "Bosnia and Herzegovina",
@@ -290,7 +294,8 @@ function renderCalculations(matches) {
     for (let team in teamStats) {
         let tally = (teamStats[team].wins * 3) + (teamStats[team].draws * 1) + teamStats[team].goalBonuses;
         if (bonuses.knockoutQual.includes(team)) tally += 5;
-        if (bonuses.semiFinalists.includes(team)) tally += 10;
+        if (bonuses.quarterFinalists && bonuses.quarterFinalists.includes(team)) tally += 10;
+        if (bonuses.semiFinalists.includes(team)) tally += 15;
         if (bonuses.champion === team) tally += 20;
         teamStats[team].points = tally;
     }
@@ -307,7 +312,8 @@ function renderCalculations(matches) {
                 matchPoints += (teamStats[t].wins * 3) + (teamStats[t].draws * 1) + teamStats[t].goalBonuses;
             }
             if (bonuses.knockoutQual.includes(t)) bonusPoints += 5;
-            if (bonuses.semiFinalists.includes(t)) bonusPoints += 10;
+            if (bonuses.quarterFinalists && bonuses.quarterFinalists.includes(t)) bonusPoints += 10;
+            if (bonuses.semiFinalists.includes(t)) bonusPoints += 15;
             if (bonuses.champion === t) bonusPoints += 20;
         });
         return { name: p.name, teams: p.teams, record: `${totalW} - ${totalD} - ${totalL}`, bonus: bonusPoints, total: matchPoints + bonusPoints, matchPtsOnly: matchPoints };
@@ -420,8 +426,12 @@ function showPlayerBreakdown(playerName) {
             html += `<div class="breakdown-row"><span>${t} - Reached Knockouts</span><span style="font-weight:600; color:#166534;">+5 Pts</span></div>`;
             setupBonus = true;
         }
+        if(bonuses.quarterFinalists && bonuses.quarterFinalists.includes(t)) {
+            html += `<div class="breakdown-row"><span>${t} - Reached Quarter-Finals</span><span style="font-weight:600; color:#166534;">+10 Pts</span></div>`;
+            setupBonus = true;
+        }
         if(bonuses.semiFinalists.includes(t)) {
-            html += `<div class="breakdown-row"><span>${t} - Reached Semi-Finals</span><span style="font-weight:600; color:#166534;">+10 Pts</span></div>`;
+            html += `<div class="breakdown-row"><span>${t} - Reached Semi-Finals</span><span style="font-weight:600; color:#166534;">+15 Pts</span></div>`;
             setupBonus = true;
         }
         if(bonuses.champion === t) {
@@ -451,79 +461,4 @@ function showPlayerBreakdown(playerName) {
     document.getElementById('breakdownModal').style.display = 'flex';
 }
 
-function showTeamBreakdown(teamName) {
-    const stats = globalTeamStatsCache[teamName];
-    document.getElementById('modalTeamName').innerText = `${teamName} - Points Breakdown`;
-    
-    let html = "";
-    let isEliminated = bonuses.eliminatedTeams.includes(teamName) || !bonuses.knockoutQual.includes(teamName);
-    if (isEliminated) {
-        html += `<span class="status-header-badge status-out">❌ Eliminated</span>`;
-    } else {
-        html += `<span class="status-header-badge status-active">🟢 Active / Qualified</span>`;
-    }
-    
-    html += `<div class="modal-section"><div class="modal-section-title">Match Results Log</div>`;
-    if(!stats || !stats.history || stats.history.length === 0) {
-        html += `<div style="font-style:italic; color:#64748b; font-size:13px;">No matches found in sheet log for this country yet.</div>`;
-    } else {
-        stats.history.forEach(m => {
-            let ptsDetail = `+${m.basePts} Pts`;
-            if (m.blowoutPts > 0) {
-                ptsDetail += ` <span class="bonus-badge">+2 Blowout Win</span>`;
-            }
-            html += `<div class="breakdown-row">
-                <span>vs <strong>${m.opponent}</strong> (${m.scoreString})</span>
-                <span>${ptsDetail}</span>
-            </div>`;
-        });
-    }
-    html += `</div>`;
-
-    html += `<div class="modal-section"><div class="modal-section-title">Tournament Progress Bonuses</div>`;
-    let setupBonus = false;
-    if(bonuses.knockoutQual.includes(teamName)) {
-        html += `<div class="breakdown-row"><span>Reached Knockout Stage</span><span style="font-weight:600; color:#166534;">+5 Pts</span></div>`;
-        setupBonus = true;
-    }
-    if(bonuses.semiFinalists.includes(teamName)) {
-        html += `<div class="breakdown-row"><span>Reached Semi-Finals</span><span style="font-weight:600; color:#166534;">+10 Pts</span></div>`;
-        setupBonus = true;
-    }
-    if(bonuses.champion === teamName) {
-        html += `<div class="breakdown-row"><span>World Cup Champion</span><span style="font-weight:600; color:#166534;">+20 Pts</span></div>`;
-        setupBonus = true;
-    }
-    if(!setupBonus) {
-        html += `<div style="font-style:italic; color:#64748b; font-size:13px;">No dynamic stage bonus points earned yet.</div>`;
-    }
-    html += `</div>`;
-
-    let totalComputed = stats ? stats.points : 0;
-    html += `<div class="modal-section" style="margin-top:20px; padding-top:10px; border-top:2px solid #edf2f7;">
-        <div class="breakdown-row" style="font-size:16px; font-weight:bold;">
-            <span>TOTAL POINTS GENERATED</span>
-            <span style="color:#1e3c72;">${totalComputed} Pts</span>
-        </div>
-    </div>`;
-
-    document.getElementById('modalContent').innerHTML = html;
-    document.getElementById('breakdownModal').style.display = 'flex';
-}
-
-function closeModal(eventOrForce) {
-    if(eventOrForce === true || (eventOrForce && eventOrForce.target && eventOrForce.target.id === 'breakdownModal')) {
-        document.getElementById('breakdownModal').style.display = 'none';
-    }
-}
-
-function filterDirectory() {
-    let input = document.getElementById('teamSearch').value.toLowerCase();
-    let rows = document.getElementById('directory-table').getElementsByTagName('tr');
-    for (let i = 1; i < rows.length; i++) rows[i].style.display = rows[i].textContent.toLowerCase().includes(input) ? "" : "none";
-}
-
-window.onload = loadSheetsData;
-</script>
-</body>
-</html>
+function showTeamBreakdown(team
