@@ -203,13 +203,14 @@ async function loadSheetsData() {
             return;
         }
         
-        const csvUrl = `https://docs.google.com/spreadsheets/d/${matchesId[0]}/gviz/tq?tqx=out:csv`;
+        // Cleaned up endpoint connection to minimize CORS errors
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${matchesId[0]}/pub?output=csv`;
         const res = await fetch(csvUrl);
-        if(!res.ok) throw new Error("Network response was not ok");
+        if(!res.ok) throw new Error("Could not access data endpoint");
         const dataText = await res.text();
         
         if(dataText.includes("<!doctype html") || dataText.trim() === "") {
-            tbody.innerHTML = `<tr><td colspan="6" style="color:orange; text-align:center; white-space: normal;">⚠️ Google Sheet access restricted. Change sharing to "Anyone with the link can view".</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" style="color:orange; text-align:center; white-space: normal;">⚠️ Access restricted. Ensure you select "File -> Share -> Publish to web" inside your Google Sheet.</td></tr>`;
             return;
         }
         
@@ -239,7 +240,7 @@ async function loadSheetsData() {
         renderCalculations(matches);
     } catch(e) {
         console.error(e);
-        tbody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center; white-space: normal;">❌ Error reading Google Sheet data. ${e.message || ''}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center; white-space: normal;">❌ Synchronization Error. Please check your sheet connection setup or network availability.</td></tr>`;
     }
 }
 
@@ -395,70 +396,4 @@ function showPlayerBreakdown(playerName) {
         let winLogHtml = "";
         
         if (stats && stats.history) {
-            stats.history.forEach(h => {
-                matchPts += h.basePts + h.blowoutPts;
-                if(h.basePts === 3 || h.basePts === 1) {
-                    let text = `vs ${h.opponent} (${h.scoreString}) -> +${h.basePts} Pts`;
-                    if(h.blowoutPts > 0) text += ` (+2 Bonus)`;
-                    winLogHtml += `<div style="font-size:11px; color:#64748b; padding-left:5px; margin-top:2px;">• ${text}</div>`;
-                }
-            });
-        }
-        
-        html += `<div class="modal-team-block">
-            <div class="modal-team-header">
-                <span>${t} <span class="team-tag ${labelClass}" style="font-size:10px; font-weight:bold; padding:1px 4px; border-radius:3px; text-decoration:none; opacity:1; vertical-align:middle; margin-left:5px;">${statusText}</span></span>
-                <span style="color:#15803d;">+${matchPts} Pts</span>
-            </div>`;
-        if(winLogHtml !== "") {
-            html += winLogHtml;
-        } else {
-            html += `<div style="font-size:11px; color:#64748b; font-style:italic; padding-left:5px;">No logged matches found.</div>`;
-        }
-        html += `</div>`;
-    });
-    html += `</div>`;
-
-    html += `<div class="modal-section"><div class="modal-section-title">Accumulated Stage Progress Bonuses</div>`;
-    let setupBonus = false;
-    player.teams.forEach(t => {
-        if(bonuses.knockoutQual.includes(t)) {
-            html += `<div class="breakdown-row"><span>${t} - Reached Knockouts</span><span style="font-weight:600; color:#166534;">+5 Pts</span></div>`;
-            setupBonus = true;
-        }
-        if(bonuses.quarterFinalists && bonuses.quarterFinalists.includes(t)) {
-            html += `<div class="breakdown-row"><span>${t} - Reached Quarter-Finals</span><span style="font-weight:600; color:#166534;">+10 Pts</span></div>`;
-            setupBonus = true;
-        }
-        if(bonuses.semiFinalists.includes(t)) {
-            html += `<div class="breakdown-row"><span>${t} - Reached Semi-Finals</span><span style="font-weight:600; color:#166534;">+15 Pts</span></div>`;
-            setupBonus = true;
-        }
-        if(bonuses.champion === t) {
-            html += `<div class="breakdown-row"><span>${t} - World Cup Champion</span><span style="font-weight:600; color:#166534;">+20 Pts</span></div>`;
-            setupBonus = true;
-        }
-    });
-    if(!setupBonus) {
-        html += `<div style="font-style:italic; color:#64748b; font-size:13px;">No roster country has secured stage bonuses yet.</div>`;
-    }
-    html += `</div>`;
-
-    html += `<div class="modal-section" style="margin-top:20px; padding-top:10px; border-top:2px solid #edf2f7;">
-        <div class="breakdown-row" style="font-size:13px; color:#64748b; margin-bottom:4px;">
-            <span>Subtotal Match Points:</span><span>${player.matchPtsOnly} Pts</span>
-        </div>
-        <div class="breakdown-row" style="font-size:13px; color:#64748b; margin-bottom:10px;">
-            <span>Subtotal Stage Bonus Points:</span><span>${player.bonus} Pts</span>
-        </div>
-        <div class="breakdown-row" style="font-size:16px; font-weight:bold;">
-            <span>TOTAL SYNDICATE POINTS</span>
-            <span style="color:#1e3c72;">${player.total} Pts</span>
-        </div>
-    </div>`;
-
-    document.getElementById('modalContent').innerHTML = html;
-    document.getElementById('breakdownModal').style.display = 'flex';
-}
-
-function showTeamBreakdown(team
+            stats.history.
