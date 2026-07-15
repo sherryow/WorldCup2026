@@ -5,17 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Cup Syndicate Dashboard 2026</title>
     <style>
+        /* CSS maintained from your full version */
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f4f6f9; color: #333; margin: 0; padding: 20px; }
         .container { max-width: 1100px; margin: 0 auto; }
         header { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 25px; }
         .rules-bar { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 25px; display: flex; flex-wrap: wrap; justify-content: space-around; gap: 15px; font-size: 13px; font-weight: 600; color: #555; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .rules-bar span { background: #e2e8f0; padding: 3px 8px; border-radius: 4px; color: #1e3c72; }
+        .main-layout { display: flex; flex-direction: column; gap: 25px; }
+        @media(min-width: 900px) { .main-layout { flex-direction: row; } .left-col { flex: 2; } .right-col { flex: 1.2; } }
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); padding: 20px; margin-bottom: 25px; }
+        .table-responsive { width: 100%; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
         th, td { padding: 12px 10px; border-bottom: 1px solid #edf2f7; text-align: left; }
-        .total-pts { font-weight: bold; color: #1e3c72; }
-        .team-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin: 2px; background: #f1f5f9; border: 1px solid #cbd5e1; }
+        .clickable-row { cursor: pointer; }
+        .clickable-row:hover { background-color: #f1f5f9; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-card { background: white; width: 90%; max-width: 500px; padding: 20px; border-radius: 12px; }
     </style>
 </head>
 <body>
@@ -23,22 +29,36 @@
 <div class="container">
     <header><h1>🏆 World Cup Syndicate Dashboard</h1></header>
     <div class="rules-bar">
-        <div>Win: <span>3 pts</span></div>
-        <div>Draw: <span>1 pt</span></div>
-        <div>3+ Goal Win: <span>+2 pts</span></div>
-        <div>Knockout Qual: <span>+5 pts</span></div>
-        <div>Quarter-Final: <span>+10 pts</span></div>
-        <div>Semi-Final: <span>+15 pts</span></div>
-        <div>Finals: <span>+20 pts</span></div>
-        <div>Champion: <span>+30 pts</span></div>
+        <div>Win: <span>3 pts</span></div><div>Draw: <span>1 pt</span></div>
+        <div>3+ Goal Win: <span>+2 pts</span></div><div>Knockout Qual: <span>+5 pts</span></div>
+        <div>Finals: <span>+20 pts</span></div><div>Champion: <span>+30 pts</span></div>
     </div>
 
-    <div class="card">
-        <h2>Current Standings</h2>
-        <table>
-            <thead><tr><th>Rank</th><th>Participant</th><th>Squad</th><th>Bonus</th><th>Total Pts</th></tr></thead>
-            <tbody id="leaderboard-rows"><tr><td colspan="5">Syncing...</td></tr></tbody>
-        </table>
+    <div class="main-layout">
+        <div class="left-col">
+            <div class="card">
+                <h2>Current Standings</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Rank</th><th>Participant</th><th>Squad</th><th>Total Pts</th></tr></thead>
+                        <tbody id="leaderboard-rows"><tr><td colspan="4">Syncing...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="right-col">
+            <div class="card">
+                <h2>Match Results</h2>
+                <div id="match-log" style="font-size: 12px; height: 200px; overflow-y: auto;">Syncing...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="breakdownModal" class="modal-overlay" onclick="this.style.display='none'">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <h3 id="modalTitle">Breakdown</h3>
+        <div id="modalContent"></div>
     </div>
 </div>
 
@@ -63,27 +83,24 @@ const participants = [
     { name: "Dee", teams: ["Portugal", "South Africa", "Panama", "Saudi Arabia"] }
 ];
 
-const bonuses = {
-    knockoutQual: [], quarterFinalists: [], semiFinalists: [], finalists: [], champion: "",
-};
+const bonuses = { knockoutQual: [], quarterFinalists: [], semiFinalists: [], finalists: [], champion: "" };
 
-const sheetUrl = "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0jRPG7yW27PEDZ7Bt6CRaA/edit?usp=drivesdk";
-
-function loadSheetsData() {
-    const matchesId = sheetUrl.match(/[-\w]{25,}/);
+function loadData() {
     const script = document.createElement('script');
-    script.src = `https://docs.google.com/spreadsheets/d/${matchesId[0]}/gviz/tq?tqx=responseHandler:processData`;
+    script.src = "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0jRPG7yW27PEDZ7Bt6CRaA/gviz/tq?tqx=responseHandler:processData";
     document.body.appendChild(script);
 }
 
-window.processData = function(response) {
+window.processData = function(res) {
     let teamStats = {};
     participants.forEach(p => p.teams.forEach(t => teamStats[t] = { wins: 0, draws: 0, history: [] }));
+    let matchText = [];
 
-    response.table.rows.forEach(row => {
-        if (!row.c[0]) return;
-        const home = row.c[0].v, away = row.c[2].v;
+    res.table.rows.forEach(row => {
+        if (!row.c[0] || !row.c[1]) return;
         const [h, a] = row.c[1].v.split('-').map(Number);
+        const home = row.c[0].v, away = row.c[2].v;
+        matchText.push(`${home} ${row.c[1].v} ${away}`);
         
         if (h > a) {
             teamStats[home].wins++;
@@ -108,12 +125,13 @@ window.processData = function(response) {
             if (bonuses.finalists.includes(t)) pts += 20;
             if (bonuses.champion === t) pts += 30; // Champion 30 pts
         });
-        html += `<tr><td>1</td><td>${p.name}</td><td>${p.teams.map(t=>`<span class="team-tag">${t}</span>`).join('')}</td><td>-</td><td class="total-pts">${pts}</td></tr>`;
+        html += `<tr class="clickable-row"><td>1</td><td>${p.name}</td><td>${p.teams.join(', ')}</td><td class="total-pts">${pts}</td></tr>`;
     });
     document.getElementById('leaderboard-rows').innerHTML = html;
+    document.getElementById('match-log').innerText = matchText.join("\n");
 };
 
-window.onload = loadSheetsData;
+window.onload = loadData;
 </script>
 </body>
 </html>
