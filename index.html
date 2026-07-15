@@ -5,60 +5,140 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Cup Syndicate Dashboard 2026</title>
     <style>
-        /* CSS maintained from your full version */
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f4f6f9; color: #333; margin: 0; padding: 20px; }
         .container { max-width: 1100px; margin: 0 auto; }
         header { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 25px; }
+        header h1 { margin: 0 0 10px 0; font-size: 28px; }
+        header p { margin: 0; opacity: 0.9; font-size: 15px; }
         .rules-bar { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 25px; display: flex; flex-wrap: wrap; justify-content: space-around; gap: 15px; font-size: 13px; font-weight: 600; color: #555; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .rules-bar span { background: #e2e8f0; padding: 3px 8px; border-radius: 4px; color: #1e3c72; }
         .main-layout { display: flex; flex-direction: column; gap: 25px; }
-        @media(min-width: 900px) { .main-layout { flex-direction: row; } .left-col { flex: 2; } .right-col { flex: 1.2; } }
-        .card { background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); padding: 20px; margin-bottom: 25px; }
-        .table-responsive { width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th, td { padding: 12px 10px; border-bottom: 1px solid #edf2f7; text-align: left; }
-        .clickable-row { cursor: pointer; }
+        @media(min-width: 900px) { .main-layout { flex-direction: row; align-items: flex-start; } .left-col { flex: 2; } .right-col { flex: 1.2; } }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); padding: 20px; margin-bottom: 25px; overflow: hidden; }
+        .card h2 { margin-top: 0; font-size: 18px; color: #1a202c; border-bottom: 2px solid #edf2f7; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 500px; }
+        th, td { padding: 12px 10px; border-bottom: 1px solid #edf2f7; text-align: left; white-space: nowrap; }
+        th { background-color: #f7fafc; color: #4a5568; font-weight: 600; text-transform: uppercase; font-size: 11px; }
+        
+        .rank-badge { display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 50%; font-weight: bold; font-size: 12px; }
+        .rank-1 { background: #fef3c7; color: #d97706; }
+        .rank-2 { background: #e2e8f0; color: #475569; }
+        .rank-3 { background: #ffedd5; color: #ea580c; }
+        .rank-normal { background: #f1f5f9; color: #64748b; }
+        .total-pts { font-weight: bold; color: #1e3c72; font-size: 15px; }
+        
+        .team-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin: 2px; font-weight: 500; }
+        .team-normal { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+        .team-qualified { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .team-eliminated { background: #fee2e2; color: #991b1b; text-decoration: line-through; opacity: 0.65; border: 1px solid #fecaca; }
+
+        .search-box { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
+        .match-input-log { background: #f8fafc; border-left: 4px solid #1e3c72; padding: 12px; font-family: monospace; font-size: 13px; white-space: pre-wrap; overflow-x: auto; border-radius: 0 8px 8px 0; max-height: 250px; }
+        .loading-text { font-style: italic; color: #64748b; padding: 15px 0; text-align: center; }
+
+        .clickable-row { cursor: pointer; transition: background 0.15s ease; }
         .clickable-row:hover { background-color: #f1f5f9; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-card { background: white; width: 90%; max-width: 500px; padding: 20px; border-radius: 12px; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px); z-index: 1000; justify-content: center; align-items: center; padding: 15px; }
+        .modal-card { background: white; width: 100%; max-width: 550px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); animation: modalSlide 0.2s ease-out; overflow: hidden; }
+        .modal-header { background: #1e3c72; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { margin: 0; font-size: 18px; }
+        .modal-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; opacity: 0.8; }
+        .modal-close:hover { opacity: 1; }
+        .modal-body { padding: 20px; max-height: 75vh; overflow-y: auto; }
+        .modal-section { margin-bottom: 15px; }
+        .modal-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px; }
+        .breakdown-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #f1f5f9; font-size: 13px; }
+        .breakdown-row:last-child { border-bottom: none; }
+        
+        .bonus-badge { background: #fee2e2; color: #991b1b; font-size: 11px; padding: 1px 5px; border-radius: 3px; font-weight: bold; margin-left: 6px; }
+        .status-header-badge { display: inline-block; font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 50px; margin-bottom: 12px; }
+        .status-active { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .status-out { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .modal-team-block { background: #f8fafc; padding: 10px 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #e2e8f0; }
+        .modal-team-header { font-weight: bold; color: #1e3c72; font-size: 14px; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        @keyframes modalSlide { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header><h1>🏆 World Cup Syndicate Dashboard</h1></header>
+    <header>
+        <h1>🏆 World Cup Syndicate Dashboard</h1>
+        <p>Google Sheets Connected Live Roster Engine</p>
+    </header>
+
     <div class="rules-bar">
-        <div>Win: <span>3 pts</span></div><div>Draw: <span>1 pt</span></div>
-        <div>3+ Goal Win: <span>+2 pts</span></div><div>Knockout Qual: <span>+5 pts</span></div>
-        <div>Finals: <span>+20 pts</span></div><div>Champion: <span>+30 pts</span></div>
+        <div>Win: <span>3 pts</span></div>
+        <div>Draw: <span>1 pt</span></div>
+        <div>Win by 3+ Goals: <span>+2 pts</span></div>
+        <div>Knockout Qual: <span>+5 pts</span></div>
+        <div>Quarter-Final: <span>+10 pts</span></div>
+        <div>Semi-Final: <span>+15 pts</span></div>
+        <div>Champion: <span>+20 pts</span></div>
     </div>
 
     <div class="main-layout">
         <div class="left-col">
             <div class="card">
-                <h2>Current Standings</h2>
+                <h2>Current Standings <span style="font-size:11px; color:#64748b; font-weight:normal; float:right; margin-top:5px;">(Click player row for breakdown)</span></h2>
                 <div class="table-responsive">
                     <table>
-                        <thead><tr><th>Rank</th><th>Participant</th><th>Squad</th><th>Total Pts</th></tr></thead>
-                        <tbody id="leaderboard-rows"><tr><td colspan="4">Syncing...</td></tr></tbody>
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">Rank</th>
+                                <th>Participant</th>
+                                <th>Squad</th>
+                                <th style="text-align: center; width: 80px;">W-D-L</th>
+                                <th style="text-align: center; width: 70px;">Bonus</th>
+                                <th style="text-align: center; width: 90px;">Total Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-rows">
+                            <tr><td colspan="6" class="loading-text">Syncing with Google Spreadsheet ledger...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
+
+            <div class="card">
+                <h2>Recorded Match Results Ledger</h2>
+                <div class="match-input-log" id="visible-match-log">Awaiting spreadsheet sync...</div>
+            </div>
         </div>
+
         <div class="right-col">
             <div class="card">
-                <h2>Match Results</h2>
-                <div id="match-log" style="font-size: 12px; height: 200px; overflow-y: auto;">Syncing...</div>
+                <h2>Team Directory <span style="font-size:11px; color:#64748b; font-weight:normal; float:right; margin-top:5px;">(Click team for breakdown)</span></h2>
+                <input type="text" id="teamSearch" class="search-box" placeholder="Search country or owner..." onkeyup="filterDirectory()">
+                <div class="table-responsive">
+                    <table id="directory-table">
+                        <thead>
+                            <tr>
+                                <th>Team</th>
+                                <th>Owner(s)</th>
+                                <th style="text-align: right;">Pts Generated</th>
+                            </tr>
+                        </thead>
+                        <tbody id="directory-rows"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div id="breakdownModal" class="modal-overlay" onclick="this.style.display='none'">
+<div id="breakdownModal" class="modal-overlay" onclick="closeModal(event)">
     <div class="modal-card" onclick="event.stopPropagation()">
-        <h3 id="modalTitle">Breakdown</h3>
-        <div id="modalContent"></div>
+        <div class="modal-header">
+            <h3 id="modalTeamName">Breakdown Details</h3>
+            <button class="modal-close" onclick="closeModal(true)">&times;</button>
+        </div>
+        <div class="modal-body" id="modalContent"></div>
     </div>
 </div>
 
@@ -83,55 +163,384 @@ const participants = [
     { name: "Dee", teams: ["Portugal", "South Africa", "Panama", "Saudi Arabia"] }
 ];
 
-const bonuses = { knockoutQual: [], quarterFinalists: [], semiFinalists: [], finalists: [], champion: "" };
+const bonuses = {
+    knockoutQual: [
+        "Mexico", "South Africa", "Switzerland", "Canada", "Bosnia and Herzegovina",
+        "Brazil", "Morocco", "USA", "Australia", "Paraguay",
+        "Germany", "Côte d'Ivoire", "Ecuador", "Netherlands", "Japan",
+        "Sweden", "Belgium", "Egypt", "Algeria", "Spain",
+        "Cabo Verde", "France", "Norway", "Senegal", "Argentina",
+        "Austria", "Colombia", "Portugal", "Congo DR", "England",
+        "Croatia", "Ghana"
+    ],
+    quarterFinalists: [
+        "France", "Morocco", "Spain", "Belgium", "Norway", "England", "Argentina"
+    ],
+    eliminatedTeams: [
+        "South Africa", "Japan", "Germany", "Netherlands", "Côte d'Ivoire", "Sweden", "Ecuador", "Congo DR", "Senegal", "Bosnia and Herzegovina",
+        "Austria", "Algeria", "Australia", "Cabo Verde", "Ghana", "Paraguay", "Canada", "Brazil", "Mexico", "Croatia", "Portugal", "USA", "Egypt"
+    ],
+    semiFinalists: [], 
+    champion: ""       
+};
 
-function loadData() {
+const sheetUrl = "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0jRPG7yW27PEDZ7Bt6CRaA/edit?usp=drivesdk";
+let globalMatchesCache = []; 
+let globalTeamStatsCache = {};
+let globalStandingsCache = [];
+
+function loadSheetsData() {
+    const tbody = document.getElementById('leaderboard-rows');
+    if(!sheetUrl || sheetUrl.includes("YOUR_GOOGLE_SHEET_URL_HERE")) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:orange; text-align:center;">Setup Needed: Paste your Google Sheet URL inside the code!</td></tr>`;
+        return;
+    }
+
+    const matchesId = sheetUrl.match(/[-\w]{25,}/);
+    if(!matchesId) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">❌ Invalid Google Sheet URL format.</td></tr>`;
+        return;
+    }
+
+    // JSONP endpoint to completely bypass cross-origin browser limits
+    const jsonpUrl = `https://docs.google.com/spreadsheets/d/${matchesId[0]}/gviz/tq?tqx=responseHandler:processGoogleSheetData`;
+    
     const script = document.createElement('script');
-    script.src = "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0jRPG7yW27PEDZ7Bt6CRaA/gviz/tq?tqx=responseHandler:processData";
+    script.src = jsonpUrl;
+    script.onerror = function() {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">❌ Sync failed. Verify internet connection or spreadsheet privileges.</td></tr>`;
+    };
     document.body.appendChild(script);
 }
 
-window.processData = function(res) {
-    let teamStats = {};
-    participants.forEach(p => p.teams.forEach(t => teamStats[t] = { wins: 0, draws: 0, history: [] }));
-    let matchText = [];
-
-    res.table.rows.forEach(row => {
-        if (!row.c[0] || !row.c[1]) return;
-        const [h, a] = row.c[1].v.split('-').map(Number);
-        const home = row.c[0].v, away = row.c[2].v;
-        matchText.push(`${home} ${row.c[1].v} ${away}`);
+window.processGoogleSheetData = function(response) {
+    const tbody = document.getElementById('leaderboard-rows');
+    try {
+        const matches = [];
+        const rows = response.table.rows;
         
-        if (h > a) {
-            teamStats[home].wins++;
-            teamStats[home].history.push(3 + (h-a >= 3 ? 2 : 0));
-        } else if (a > h) {
-            teamStats[away].wins++;
-            teamStats[away].history.push(3 + (a-h >= 3 ? 2 : 0));
-        } else {
-            teamStats[home].draws++; teamStats[away].draws++;
-        }
-    });
-
-    let html = "";
-    participants.forEach(p => {
-        let pts = 0;
-        p.teams.forEach(t => {
-            let s = teamStats[t];
-            pts += (s.wins * 3) + s.draws + s.history.reduce((a, b) => a + (b > 3 ? b - 3 : 0), 0);
-            if (bonuses.knockoutQual.includes(t)) pts += 5;
-            if (bonuses.quarterFinalists.includes(t)) pts += 10;
-            if (bonuses.semiFinalists.includes(t)) pts += 15;
-            if (bonuses.finalists.includes(t)) pts += 20;
-            if (bonuses.champion === t) pts += 30; // Champion 30 pts
+        rows.forEach(row => {
+            if (row.c && row.c[0] && row.c[1] && row.c[2]) {
+                const home = row.c[0].v ? row.c[0].v.toString().trim() : "";
+                const scoreRaw = row.c[1].v ? row.c[1].v.toString().trim() : "";
+                const away = row.c[2].v ? row.c[2].v.toString().trim() : "";
+                
+                const scoreParts = scoreRaw.split('-');
+                if(scoreParts.length === 2 && home && away) {
+                    matches.push({
+                        home: home,
+                        away: away,
+                        hScore: parseInt(scoreParts[0]),
+                        aScore: parseInt(scoreParts[1]),
+                        rawStr: `${home} ${scoreRaw} ${away}`
+                    });
+                }
+            }
         });
-        html += `<tr class="clickable-row"><td>1</td><td>${p.name}</td><td>${p.teams.join(', ')}</td><td class="total-pts">${pts}</td></tr>`;
-    });
-    document.getElementById('leaderboard-rows').innerHTML = html;
-    document.getElementById('match-log').innerText = matchText.join("\n");
+
+        globalMatchesCache = matches;
+        renderCalculations(matches);
+    } catch (e) {
+        console.error(e);
+        tbody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">❌ Error decoding query return.</td></tr>`;
+    }
 };
 
-window.onload = loadData;
+function renderCalculations(matches) {
+    let teamStats = {};
+    let displayLines = [];
+    
+    participants.forEach(p => {
+        p.teams.forEach(t => {
+            if (!teamStats[t]) teamStats[t] = { wins: 0, draws: 0, losses: 0, goalBonuses: 0, points: 0, history: [] };
+        });
+    });
+
+    matches.forEach(m => {
+        if (!teamStats[m.home]) teamStats[m.home] = { wins: 0, draws: 0, losses: 0, goalBonuses: 0, points: 0, history: [] };
+        if (!teamStats[m.away]) teamStats[m.away] = { wins: 0, draws: 0, losses: 0, goalBonuses: 0, points: 0, history: [] };
+        
+        displayLines.push(m.rawStr);
+
+        let homePtsEarned = 0;
+        let awayPtsEarned = 0;
+        let homeBlowout = 0;
+        let awayBlowout = 0;
+
+        if (m.hScore > m.aScore) {
+            teamStats[m.home].wins++;
+            teamStats[m.away].losses++;
+            homePtsEarned = 3;
+            if ((m.hScore - m.aScore) >= 3) {
+                teamStats[m.home].goalBonuses += 2;
+                homeBlowout = 2;
+            }
+        } else if (m.aScore > m.hScore) {
+            teamStats[m.away].wins++;
+            teamStats[m.home].losses++;
+            awayPtsEarned = 3;
+            if ((m.aScore - m.hScore) >= 3) {
+                teamStats[m.away].goalBonuses += 2;
+                awayBlowout = 2;
+            }
+        } else {
+            teamStats[m.home].draws++;
+            teamStats[m.away].draws++;
+            homePtsEarned = 1;
+            awayPtsEarned = 1;
+        }
+
+        teamStats[m.home].history.push({ opponent: m.away, scoreString: `${m.hScore}-${m.aScore}`, basePts: homePtsEarned, blowoutPts: homeBlowout });
+        teamStats[m.away].history.push({ opponent: m.home, scoreString: `${m.aScore}-${m.hScore}`, basePts: awayPtsEarned, blowoutPts: awayBlowout });
+    });
+
+    for (let team in teamStats) {
+        let tally = (teamStats[team].wins * 3) + (teamStats[team].draws * 1) + teamStats[team].goalBonuses;
+        if (bonuses.knockoutQual.includes(team)) tally += 5;
+        if (bonuses.quarterFinalists && bonuses.quarterFinalists.includes(team)) tally += 10;
+        if (bonuses.semiFinalists.includes(team)) tally += 15;
+        if (bonuses.champion === team) tally += 20;
+        teamStats[team].points = tally;
+    }
+
+    globalTeamStatsCache = teamStats;
+
+    let standings = participants.map(p => {
+        let totalW = 0, totalD = 0, totalL = 0, matchPoints = 0, bonusPoints = 0;
+        p.teams.forEach(t => {
+            if (teamStats[t]) {
+                totalW += teamStats[t].wins;
+                totalD += teamStats[t].draws;
+                totalL += teamStats[t].losses;
+                matchPoints += (teamStats[t].wins * 3) + (teamStats[t].draws * 1) + teamStats[t].goalBonuses;
+            }
+            if (bonuses.knockoutQual.includes(t)) bonusPoints += 5;
+            if (bonuses.quarterFinalists && bonuses.quarterFinalists.includes(t)) bonusPoints += 10;
+            if (bonuses.semiFinalists.includes(t)) bonusPoints += 15;
+            if (bonuses.champion === t) bonusPoints += 20;
+        });
+        return { name: p.name, teams: p.teams, record: `${totalW} - ${totalD} - ${totalL}`, bonus: bonusPoints, total: matchPoints + bonusPoints, matchPtsOnly: matchPoints };
+    });
+
+    standings.sort((a, b) => b.total - a.total);
+    globalStandingsCache = standings;
+
+    const tbody = document.getElementById('leaderboard-rows');
+    tbody.innerHTML = "";
+    let currentRank = 1;
+    
+    standings.forEach((row, index) => {
+        if (index > 0 && row.total < standings[index - 1].total) currentRank = index + 1;
+        let badgeClass = currentRank === 1 ? "rank-1" : currentRank === 2 ? "rank-2" : currentRank === 3 ? "rank-3" : "rank-normal";
+        
+        let tagsHtml = row.teams.map(t => {
+            let statusClass = "team-normal"; 
+            if (bonuses.eliminatedTeams.includes(t) || !bonuses.knockoutQual.includes(t)) {
+                statusClass = "team-eliminated";
+            } else if (bonuses.knockoutQual.includes(t)) {
+                statusClass = "team-qualified";
+            }
+            return `<span class="team-tag ${statusClass}">${t}</span>`;
+        }).join("");
+
+        let safeName = row.name.replace(/'/g, "\\'");
+
+        tbody.innerHTML += `<tr class="clickable-row" onclick="showPlayerBreakdown('${safeName}')">
+            <td><span class="rank-badge ${badgeClass}">${currentRank}</span></td>
+            <td><strong>${row.name}</strong></td>
+            <td>${tagsHtml}</td>
+            <td style="text-align: center;">${row.record}</td>
+            <td style="text-align: center;">${row.bonus}</td>
+            <td style="text-align: center;" class="total-pts">${row.total}</td>
+        </tr>`;
+    });
+
+    let uniqueTeams = {};
+    participants.forEach(p => {
+        p.teams.forEach(t => {
+            if (!uniqueTeams[t]) uniqueTeams[t] = [];
+            uniqueTeams[t].push(p.name);
+        });
+    });
+
+    const dirBody = document.getElementById('directory-rows');
+    dirBody.innerHTML = "";
+    Object.keys(uniqueTeams).sort().forEach(t => {
+        let pts = teamStats[t] ? teamStats[t].points : 0;
+        dirBody.innerHTML += `<tr class="clickable-row" onclick="showTeamBreakdown('${t.replace(/'/g, "\\'")}')">
+            <td><strong>${t}</strong></td>
+            <td><span style="font-size:12px; color:#555;">${uniqueTeams[t].join(", ")}</span></td>
+            <td style="text-align: right; font-weight: bold; color: #15803d;">+${pts}</td>
+        </tr>`;
+    });
+
+    document.getElementById('visible-match-log').textContent = displayLines.length > 0 ? displayLines.join("\n") : "No matches recorded in spreadsheet yet.";
+}
+
+function showPlayerBreakdown(playerName) {
+    const player = globalStandingsCache.find(p => p.name === playerName);
+    if(!player) return;
+    
+    document.getElementById('modalTeamName').innerText = `${playerName} - Roster Standings`;
+    let html = "";
+    
+    html += `<div class="modal-section"><div class="modal-section-title"> Roster Country Breakdown</div>`;
+    player.teams.forEach(t => {
+        const stats = globalTeamStatsCache[t];
+        let statusText = "Active";
+        let labelClass = "team-qualified";
+        if (bonuses.eliminatedTeams.includes(t) || !bonuses.knockoutQual.includes(t)) {
+            statusText = "Eliminated";
+            labelClass = "team-eliminated";
+        }
+        
+        let matchPts = 0;
+        let winLogHtml = "";
+        
+        if (stats && stats.history) {
+            stats.history.forEach(h => {
+                matchPts += h.basePts + h.blowoutPts;
+                if(h.basePts === 3 || h.basePts === 1) {
+                    let text = `vs ${h.opponent} (${h.scoreString}) -> +${h.basePts} Pts`;
+                    if(h.blowoutPts > 0) text += ` (+2 Bonus)`;
+                    winLogHtml += `<div style="font-size:11px; color:#64748b; padding-left:5px; margin-top:2px;">• ${text}</div>`;
+                }
+            });
+        }
+        
+        html += `<div class="modal-team-block">
+            <div class="modal-team-header">
+                <span>${t} <span class="team-tag ${labelClass}" style="font-size:10px; font-weight:bold; padding:1px 4px; border-radius:3px; text-decoration:none; opacity:1; vertical-align:middle; margin-left:5px;">${statusText}</span></span>
+                <span style="color:#15803d;">+${matchPts} Pts</span>
+            </div>`;
+        if(winLogHtml !== "") {
+            html += winLogHtml;
+        } else {
+            html += `<div style="font-size:11px; color:#64748b; font-style:italic; padding-left:5px;">No logged matches found.</div>`;
+        }
+        html += `</div>`;
+    });
+    html += `</div>`;
+
+    html += `<div class="modal-section"><div class="modal-section-title">Accumulated Stage Progress Bonuses</div>`;
+    let setupBonus = false;
+    player.teams.forEach(t => {
+        if(bonuses.knockoutQual.includes(t)) {
+            html += `<div class="breakdown-row"><span>${t} - Reached Knockouts</span><span style="font-weight:600; color:#166534;">+5 Pts</span></div>`;
+            setupBonus = true;
+        }
+        if(bonuses.quarterFinalists && bonuses.quarterFinalists.includes(t)) {
+            html += `<div class="breakdown-row"><span>${t} - Reached Quarter-Finals</span><span style="font-weight:600; color:#166534;">+10 Pts</span></div>`;
+            setupBonus = true;
+        }
+        if(bonuses.semiFinalists.includes(t)) {
+            html += `<div class="breakdown-row"><span>${t} - Reached Semi-Finals</span><span style="font-weight:600; color:#166534;">+15 Pts</span></div>`;
+            setupBonus = true;
+        }
+        if(bonuses.champion === t) {
+            html += `<div class="breakdown-row"><span>${t} - World Cup Champion</span><span style="font-weight:600; color:#166534;">+20 Pts</span></div>`;
+            setupBonus = true;
+        }
+    });
+    if(!setupBonus) {
+        html += `<div style="font-style:italic; color:#64748b; font-size:13px;">No roster country has secured stage bonuses yet.</div>`;
+    }
+    html += `</div>`;
+
+    html += `<div class="modal-section" style="margin-top:20px; padding-top:10px; border-top:2px solid #edf2f7;">
+        <div class="breakdown-row" style="font-size:13px; color:#64748b; margin-bottom:4px;">
+            <span>Subtotal Match Points:</span><span>${player.matchPtsOnly} Pts</span>
+        </div>
+        <div class="breakdown-row" style="font-size:13px; color:#64748b; margin-bottom:10px;">
+            <span>Subtotal Stage Bonus Points:</span><span>${player.bonus} Pts</span>
+        </div>
+        <div class="breakdown-row" style="font-size:16px; font-weight:bold;">
+            <span>TOTAL SYNDICATE POINTS</span>
+            <span style="color:#1e3c72;">${player.total} Pts</span>
+        </div>
+    </div>`;
+
+    document.getElementById('modalContent').innerHTML = html;
+    document.getElementById('breakdownModal').style.display = 'flex';
+}
+
+function showTeamBreakdown(teamName) {
+    const stats = globalTeamStatsCache[teamName];
+    document.getElementById('modalTeamName').innerText = `${teamName} - Points Breakdown`;
+    
+    let html = "";
+    let isEliminated = bonuses.eliminatedTeams.includes(teamName) || !bonuses.knockoutQual.includes(teamName);
+    if (isEliminated) {
+        html += `<span class="status-header-badge status-out">❌ Eliminated</span>`;
+    } else {
+        html += `<span class="status-header-badge status-active">🟢 Active / Qualified</span>`;
+    }
+    
+    html += `<div class="modal-section"><div class="modal-section-title">Match Results Log</div>`;
+    if(!stats || !stats.history || stats.history.length === 0) {
+        html += `<div style="font-style:italic; color:#64748b; font-size:13px;">No matches found in sheet log for this country yet.</div>`;
+    } else {
+        stats.history.forEach(m => {
+            let ptsDetail = `+${m.basePts} Pts`;
+            if (m.blowoutPts > 0) {
+                ptsDetail += ` <span class="bonus-badge">+2 Blowout Win</span>`;
+            }
+            html += `<div class="breakdown-row">
+                <span>vs <strong>${m.opponent}</strong> (${m.scoreString})</span>
+                <span>${ptsDetail}</span>
+            </div>`;
+        });
+    }
+    html += `</div>`;
+
+    html += `<div class="modal-section"><div class="modal-section-title">Tournament Progress Bonuses</div>`;
+    let setupBonus = false;
+    if(bonuses.knockoutQual.includes(teamName)) {
+        html += `<div class="breakdown-row"><span>Reached Knockout Stage</span><span style="font-weight:600; color:#166534;">+5 Pts</span></div>`;
+        setupBonus = true;
+    }
+    if(bonuses.quarterFinalists && bonuses.quarterFinalists.includes(teamName)) {
+        html += `<div class="breakdown-row"><span>Reached Quarter-Finals</span><span style="font-weight:600; color:#166534;">+10 Pts</span></div>`;
+        setupBonus = true;
+    }
+    if(bonuses.semiFinalists.includes(teamName)) {
+        html += `<div class="breakdown-row"><span>Reached Semi-Finals</span><span style="font-weight:600; color:#166534;">+15 Pts</span></div>`;
+        setupBonus = true;
+    }
+    if(bonuses.champion === teamName) {
+        html += `<div class="breakdown-row"><span>World Cup Champion</span><span style="font-weight:600; color:#166534;">+20 Pts</span></div>`;
+        setupBonus = true;
+    }
+    if(!setupBonus) {
+        html += `<div style="font-style:italic; color:#64748b; font-size:13px;">No dynamic stage bonus points earned yet.</div>`;
+    }
+    html += `</div>`;
+
+    let totalComputed = stats ? stats.points : 0;
+    html += `<div class="modal-section" style="margin-top:20px; padding-top:10px; border-top:2px solid #edf2f7;">
+        <div class="breakdown-row" style="font-size:16px; font-weight:bold;">
+            <span>TOTAL POINTS GENERATED</span>
+            <span style="color:#1e3c72;">${totalComputed} Pts</span>
+        </div>
+    </div>`;
+
+    document.getElementById('modalContent').innerHTML = html;
+    document.getElementById('breakdownModal').style.display = 'flex';
+}
+
+function closeModal(eventOrForce) {
+    if(eventOrForce === true || (eventOrForce && eventOrForce.target && eventOrForce.target.id === 'breakdownModal')) {
+        document.getElementById('breakdownModal').style.display = 'none';
+    }
+}
+
+function filterDirectory() {
+    let input = document.getElementById('teamSearch').value.toLowerCase();
+    let rows = document.getElementById('directory-table').getElementsByTagName('tr');
+    for (let i = 1; i < rows.length; i++) rows[i].style.display = rows[i].textContent.toLowerCase().includes(input) ? "" : "none";
+}
+
+window.onload = loadSheetsData;
 </script>
 </body>
 </html>
