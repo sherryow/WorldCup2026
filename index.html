@@ -79,7 +79,8 @@
         <div>Knockout Qual: <span>+5 pts</span></div>
         <div>Quarter-Final: <span>+10 pts</span></div>
         <div>Semi-Final: <span>+15 pts</span></div>
-        <div>Champion: <span>+20 pts</span></div>
+        <div>Finalist: <span>+20 pts</span></div>
+        <div>Champion: <span>+30 pts</span></div>
     </div>
 
     <div class="main-layout">
@@ -182,7 +183,8 @@ const bonuses = {
     "Colombia", "Morocco", "Belgium", "Norway", "Switzerland", "France"],
     
     semiFinalists: ["England", "Argentina", "France", "Spain"], 
-    champion: ""       
+    finalists: ["France", "Argentina"], // Add teams reaching final here
+    champion: "Argentina"       
 };
 
 const sheetUrl = "https://docs.google.com/spreadsheets/d/1AzxpmFSdefQyGP1zvc53H0jRPG7yW27PEDZ7Bt6CRaA/edit?usp=drivesdk";
@@ -203,7 +205,6 @@ function loadSheetsData() {
         return;
     }
 
-    // JSONP endpoint to completely bypass cross-origin browser limits
     const jsonpUrl = `https://docs.google.com/spreadsheets/d/${matchesId[0]}/gviz/tq?tqx=responseHandler:processGoogleSheetData`;
     
     const script = document.createElement('script');
@@ -300,7 +301,8 @@ function renderCalculations(matches) {
         if (bonuses.knockoutQual.includes(team)) tally += 5;
         if (bonuses.quarterFinalists && bonuses.quarterFinalists.includes(team)) tally += 10;
         if (bonuses.semiFinalists.includes(team)) tally += 15;
-        if (bonuses.champion === team) tally += 20;
+        if (bonuses.finalists.includes(team)) tally += 20;
+        if (bonuses.champion === team) tally += 30;
         teamStats[team].points = tally;
     }
 
@@ -318,7 +320,8 @@ function renderCalculations(matches) {
             if (bonuses.knockoutQual.includes(t)) bonusPoints += 5;
             if (bonuses.quarterFinalists && bonuses.quarterFinalists.includes(t)) bonusPoints += 10;
             if (bonuses.semiFinalists.includes(t)) bonusPoints += 15;
-            if (bonuses.champion === t) bonusPoints += 20;
+            if (bonuses.finalists.includes(t)) bonusPoints += 20;
+            if (bonuses.champion === t) bonusPoints += 30;
         });
         return { name: p.name, teams: p.teams, record: `${totalW} - ${totalD} - ${totalL}`, bonus: bonusPoints, total: matchPoints + bonusPoints, matchPtsOnly: matchPoints };
     });
@@ -438,8 +441,12 @@ function showPlayerBreakdown(playerName) {
             html += `<div class="breakdown-row"><span>${t} - Reached Semi-Finals</span><span style="font-weight:600; color:#166534;">+15 Pts</span></div>`;
             setupBonus = true;
         }
+        if(bonuses.finalists.includes(t)) {
+            html += `<div class="breakdown-row"><span>${t} - Finalist</span><span style="font-weight:600; color:#166534;">+20 Pts</span></div>`;
+            setupBonus = true;
+        }
         if(bonuses.champion === t) {
-            html += `<div class="breakdown-row"><span>${t} - World Cup Champion</span><span style="font-weight:600; color:#166534;">+20 Pts</span></div>`;
+            html += `<div class="breakdown-row"><span>${t} - World Cup Champion</span><span style="font-weight:600; color:#166534;">+30 Pts</span></div>`;
             setupBonus = true;
         }
     });
@@ -508,8 +515,12 @@ function showTeamBreakdown(teamName) {
         html += `<div class="breakdown-row"><span>Reached Semi-Finals</span><span style="font-weight:600; color:#166534;">+15 Pts</span></div>`;
         setupBonus = true;
     }
+    if(bonuses.finalists.includes(teamName)) {
+        html += `<div class="breakdown-row"><span>Finalist</span><span style="font-weight:600; color:#166534;">+20 Pts</span></div>`;
+        setupBonus = true;
+    }
     if(bonuses.champion === teamName) {
-        html += `<div class="breakdown-row"><span>World Cup Champion</span><span style="font-weight:600; color:#166534;">+20 Pts</span></div>`;
+        html += `<div class="breakdown-row"><span>World Cup Champion</span><span style="font-weight:600; color:#166534;">+30 Pts</span></div>`;
         setupBonus = true;
     }
     if(!setupBonus) {
